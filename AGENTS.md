@@ -27,7 +27,7 @@ This is a development project. There is no backwards compatibility and the data 
 
 ## Deployment
 
-The app is deployed on Railway (project and service `ai-teammates`, environment `production`).
+The app is deployed on Railway (project `kind-compassion`, service `Crewmate`, environment `production`).
 
 - When code starts reading a new environment variable, add it to the Railway service too, with the value from `.env.local`.
 - The chat agent and the other tasks in `trigger/` run on Trigger.dev, not Railway, and see only the variables set there. When code they run starts reading a new environment variable (in `trigger/` or anything it imports, such as `lib/` and `db/`), add it to the Trigger.dev project's production environment as well, with the value from `.env.local`.

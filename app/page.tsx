@@ -1,10 +1,23 @@
-import { Button } from "@/components/ui/button"
+import { Show, SignInButton, SignOutButton, UserButton } from "@clerk/nextjs";
+
+import { Button } from "@/components/ui/button";
 
 export default function Page() {
   return (
     <div className="flex min-h-svh p-6">
       <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
         <div>
+          <Show when="signed-out">
+            <SignInButton>
+              <Button>Sign in</Button>
+            </SignInButton>
+          </Show>
+          <Show when="signed-in">
+            <UserButton />
+            <SignOutButton>
+              <Button variant="outline">Sign out</Button>
+            </SignOutButton>
+          </Show>
           <h1 className="font-medium">Project ready!</h1>
           <p>You may now add components and start building.</p>
           <p>We&apos;ve already added the button component for you.</p>
@@ -15,5 +28,5 @@ export default function Page() {
         </div>
       </div>
     </div>
-  )
+  );
 }
