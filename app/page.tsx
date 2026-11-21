@@ -23,7 +23,7 @@ export default async function Page() {
       <Empty>
         <EmptyHeader>
           <EmptyMedia>
-            <ChatAvatar seed={randomUUID()} className="size-9" />
+            <ChatAvatar animated seed={randomUUID()} className="size-20" />
           </EmptyMedia>
           <EmptyTitle>Meet your first bot</EmptyTitle>
           <EmptyDescription>

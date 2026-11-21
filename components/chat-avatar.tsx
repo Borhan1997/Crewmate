@@ -7,19 +7,13 @@ const style = new Style(miniavs);
 
 type ChatAvatarProps = {
   seed: string;
-  /**
-   * Turns on DiceBear's opt-in animation. Miniavs has no animated variants, so
-   * this has no visible effect until the style is swapped for an animated one.
-   */
+  /** Miniavs has no native animation, so this applies a CSS bob to the image. */
   animated?: boolean;
   className?: string;
 };
 
 export function ChatAvatar({ seed, animated = false, className }: ChatAvatarProps) {
-  const src = new Avatar(style, {
-    seed,
-    tags: [animated ? "animation" : "!animation"],
-  }).toDataUri();
+  const src = new Avatar(style, { seed }).toDataUri();
 
   return (
     <Image
@@ -28,7 +22,11 @@ export function ChatAvatar({ seed, animated = false, className }: ChatAvatarProp
       width={32}
       height={32}
       unoptimized
-      className={cn("size-8 shrink-0 rounded-full", className)}
+      className={cn(
+        "size-8 shrink-0 rounded-full",
+        animated && "animate-avatar-bob motion-reduce:animate-none",
+        className
+      )}
     />
   );
 }
