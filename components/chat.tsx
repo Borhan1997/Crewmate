@@ -121,6 +121,20 @@ function ChatView({
     messages: initialMessages,
     transport,
     resume: initialMessages.length > 0,
+    // After a handoff the teammate is the one the user is now talking to.
+    onFinish: ({ message }) => {
+      const handoff = message.parts.findLast(
+        (part) =>
+          part.type === "tool-handoff" && part.state === "output-available",
+      );
+      if (
+        handoff?.type === "tool-handoff" &&
+        handoff.state === "output-available" &&
+        handoff.output.ok
+      ) {
+        onBotChange(handoff.output.botId);
+      }
+    },
   });
 
   function handleSubmit({ text }: PromptInputMessage) {
@@ -133,36 +147,55 @@ function ChatView({
       <Conversation>
         <ConversationContent className="mx-auto w-full max-w-3xl">
           {messages.map((message) => {
-            const author =
-              message.role === "assistant" && bots.length > 0
-                ? bots.find((bot) =>
-                    message.parts.some(
-                      (part) =>
-                        part.type === "data-bot" &&
-                        part.data.botId === bot.id,
-                    ),
-                  )
-                : undefined;
+            // A handoff stamps a new `data-bot` part, so a reply can hold the
+            // words of several bots: split it into one section per bot.
+            const sections: {
+              author?: ChatBot;
+              parts: ChatMessage["parts"];
+            }[] = [{ parts: [] }];
+            for (const part of message.parts) {
+              if (part.type === "data-bot") {
+                const author =
+                  message.role === "assistant"
+                    ? bots.find((bot) => bot.id === part.data.botId)
+                    : undefined;
+                if (sections.at(-1)!.parts.length === 0) {
+                  sections.at(-1)!.author = author;
+                } else {
+                  sections.push({ author, parts: [] });
+                }
+              } else {
+                sections.at(-1)!.parts.push(part);
+              }
+            }
             return (
               <Message from={message.role} key={message.id}>
-                {author && (
-                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <ChatAvatar seed={author.avatar} className="size-6" />
-                    {author.name}
+                {sections.map(({ author, parts }, section) => (
+                  <div key={section} className="flex flex-col gap-2">
+                    {author && (
+                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                        <ChatAvatar seed={author.avatar} className="size-6" />
+                        {author.name}
+                      </div>
+                    )}
+                    <MessageContent>
+                      {parts.map((part, i) =>
+                        part.type === "text" ? (
+                          <MessageResponse
+                            key={`${message.id}-${section}-${i}`}
+                          >
+                            {part.text}
+                          </MessageResponse>
+                        ) : (
+                          <ToolCall
+                            key={`${message.id}-${section}-${i}`}
+                            part={part}
+                          />
+                        ),
+                      )}
+                    </MessageContent>
                   </div>
-                )}
-                <MessageContent>
-                  {message.parts.map((part, i) => {
-                    if (part.type === "data-bot") return null;
-                    return part.type === "text" ? (
-                      <MessageResponse key={`${message.id}-${i}`}>
-                        {part.text}
-                      </MessageResponse>
-                    ) : (
-                      <ToolCall key={`${message.id}-${i}`} part={part} />
-                    );
-                  })}
-                </MessageContent>
+                ))}
               </Message>
             );
           })}
@@ -180,7 +213,10 @@ function ChatView({
                 <PromptInputSelect
                   value={botId}
                   onValueChange={(value) => value && onBotChange(String(value))}
-                  items={bots.map((bot) => ({ value: bot.id, label: bot.name }))}
+                  items={bots.map((bot) => ({
+                    value: bot.id,
+                    label: bot.name,
+                  }))}
                 >
                   <PromptInputSelectTrigger aria-label="Bot to talk to">
                     <PromptInputSelectValue>
