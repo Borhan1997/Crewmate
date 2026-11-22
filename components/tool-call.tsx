@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  isToolUIPart,
-  type InferUITools,
-  type UIMessage,
-} from "ai";
+import { isToolUIPart, type InferUITools, type UIMessage } from "ai";
 import {
   ArrowRightLeftIcon,
   FileTextIcon,
@@ -34,7 +30,8 @@ import {
 import type { ChatTools } from "@/lib/chat-tools";
 
 export type ChatMessage = UIMessage<
-  unknown,
+  // On a user message in a group chat: the bot it was addressed to.
+  { botId?: string } | undefined,
   // `bot` stamps a reply with the bot that wrote it.
   { bot: { botId: string } },
   InferUITools<ChatTools>

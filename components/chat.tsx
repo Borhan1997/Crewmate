@@ -12,6 +12,7 @@ import {
   mintChatAccessToken,
   startChatSession,
 } from "@/actions/chat";
+import { Badge } from "@/components/ui/badge";
 import { ChatAvatar } from "@/components/chat-avatar";
 import { ToolCall, type ChatMessage } from "@/components/tool-call";
 import type { crewmateChat } from "@/trigger/chat";
@@ -139,7 +140,8 @@ function ChatView({
 
   function handleSubmit({ text }: PromptInputMessage) {
     if (!text.trim()) return;
-    sendMessage({ text });
+    // In a group chat, remember which bot this message is for.
+    sendMessage({ text, metadata: bots.length > 0 ? { botId } : undefined });
   }
 
   return (
@@ -168,6 +170,10 @@ function ChatView({
                 sections.at(-1)!.parts.push(part);
               }
             }
+            const addressee =
+              message.role === "user"
+                ? bots.find((bot) => bot.id === message.metadata?.botId)
+                : undefined;
             return (
               <Message from={message.role} key={message.id}>
                 {sections.map(({ author, parts }, section) => (
@@ -179,20 +185,37 @@ function ChatView({
                       </div>
                     )}
                     <MessageContent>
-                      {parts.map((part, i) =>
-                        part.type === "text" ? (
-                          <MessageResponse
-                            key={`${message.id}-${section}-${i}`}
-                          >
+                      {parts.map((part, i) => {
+                        const key = `${message.id}-${section}-${i}`;
+                        if (part.type !== "text")
+                          return <ToolCall key={key} part={part} />;
+                        // Like a tag: the addressed bot sits inline at the
+                        // start of the first line of the user's message.
+                        if (addressee && i === 0) {
+                          return (
+                            <p key={key} className="whitespace-pre-wrap">
+                              <Badge
+                                variant="secondary"
+                                className="mr-1.5 inline-flex h-6 max-w-40 gap-1.5 pl-1 align-middle"
+                              >
+                                <ChatAvatar
+                                  seed={addressee.avatar}
+                                  className="size-4 shrink-0"
+                                />
+                                <span className="truncate">
+                                  {addressee.name}
+                                </span>
+                              </Badge>
+                              {part.text}
+                            </p>
+                          );
+                        }
+                        return (
+                          <MessageResponse key={key}>
                             {part.text}
                           </MessageResponse>
-                        ) : (
-                          <ToolCall
-                            key={`${message.id}-${section}-${i}`}
-                            part={part}
-                          />
-                        ),
-                      )}
+                        );
+                      })}
                     </MessageContent>
                   </div>
                 ))}
