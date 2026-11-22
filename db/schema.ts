@@ -77,3 +77,20 @@ export const botInsertSchema =createInsertSchema(bots, {
 }).omit({ id: true, userId: true, sandboxId: true, createdAt: true });
 
 export type BotInput = z.infer<typeof botInsertSchema>;
+
+export const groupChatInsertSchema = createInsertSchema(chats)
+  .omit({
+    id: true,
+    userId: true,
+    kind: true,
+    lastMessagePreview: true,
+    lastMessageAt: true,
+    createdAt: true,
+  })
+  .extend({
+    // A group is always named, unlike the nullable column.
+    name: z.string().trim().min(1, "Name the group").max(40, "Keep it under 40 characters"),
+    botIds: z.array(z.string()).min(2, "Pick at least two bots"),
+  });
+
+export type GroupChatInput = z.infer<typeof groupChatInsertSchema>;

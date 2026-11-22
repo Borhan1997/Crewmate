@@ -20,6 +20,16 @@ export default async function Page(props: PageProps<"/chats/[chatId]">) {
   const chat = await getChat(chatId);
   if (!chat) notFound();
 
+  const chatView = (
+    <main className="flex h-full min-h-0 flex-col">
+      <ChatHeader chat={chat} />
+      <Chat chatId={chatId} bots={chat.bots} isGroup={chat.kind === "group"} />
+    </main>
+  );
+
+  // Group chats have no desktop, so no side panel either.
+  if (chat.kind === "group") return <div className="h-svh">{chatView}</div>;
+
   return (
     <SidePanelProvider>
       <DesktopProvider chatId={chatId}>
@@ -32,14 +42,11 @@ export default async function Page(props: PageProps<"/chats/[chatId]">) {
             className="h-svh min-w-0"
             style={{ overflow: "hidden" }}
           >
-            <main className="flex h-full min-h-0 flex-col">
-              <ChatHeader chat={chat} />
-              <Chat chatId={chatId} />
-            </main>
+            {chatView}
           </ResizablePanel>
           <SidePanelHandle name="desktop" />
           <SidePanel name="desktop">
-            <DesktopPreview name={chat.bot.name} />
+            <DesktopPreview name={chat.bots[0].name} />
           </SidePanel>
         </ResizablePanelGroup>
       </DesktopProvider>

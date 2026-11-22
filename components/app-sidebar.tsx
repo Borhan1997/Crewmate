@@ -8,6 +8,8 @@ import { useState } from "react";
 
 import { BotDialog } from "@/components/bot-dialog";
 import { ChatAvatar } from "@/components/chat-avatar";
+import { GroupChatAvatar } from "@/components/group-chat-avatar";
+import { GroupChatDialog } from "@/components/group-chat-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -35,23 +37,30 @@ function SidebarChatItem({ chat }: { chat: SidebarChat }) {
   const [active, setActive] = useState(false);
   const { chatId } = useParams<{ chatId?: string }>();
   const isCurrent = chatId === chat.id;
+  const isGroup = chat.kind === "group";
+  const title = (isGroup ? chat.name : null) ?? chat.bots[0].name;
+  const animated = active || isCurrent;
 
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
         size="lg"
         isActive={isCurrent}
-        tooltip={chat.bot.name}
+        tooltip={title}
         render={<a href={`/chats/${chat.id}`} />}
         onMouseEnter={() => setActive(true)}
         onMouseLeave={() => setActive(false)}
         onFocus={() => setActive(true)}
         onBlur={() => setActive(false)}
       >
-        <ChatAvatar seed={chat.bot.avatar} animated={active || isCurrent} className="size-8" />
+        {isGroup ? (
+          <GroupChatAvatar bots={chat.bots} animated={animated} className="size-8" />
+        ) : (
+          <ChatAvatar seed={chat.bots[0].avatar} animated={animated} className="size-8" />
+        )}
         <div className="flex min-w-0 flex-1 flex-col group-data-[collapsible=icon]:hidden">
           <div className="flex items-baseline justify-between gap-2">
-            <span className="truncate font-medium">{chat.bot.name}</span>
+            <span className="truncate font-medium">{title}</span>
             <span
               suppressHydrationWarning
               className="shrink-0 text-xs text-muted-foreground"
@@ -70,8 +79,15 @@ function SidebarChatItem({ chat }: { chat: SidebarChat }) {
   );
 }
 
-export function AppSidebar({ chats }: { chats: SidebarChat[] }) {
+export function AppSidebar({
+  chats,
+  bots,
+}: {
+  chats: SidebarChat[];
+  bots: { id: string; name: string; avatar: string }[];
+}) {
   const [botDialogOpen, setBotDialogOpen] = useState(false);
+  const [groupDialogOpen, setGroupDialogOpen] = useState(false);
 
   return (
     <Sidebar collapsible="icon">
@@ -94,7 +110,7 @@ export function AppSidebar({ chats }: { chats: SidebarChat[] }) {
               <PlusIcon />
               Create new bot
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setGroupDialogOpen(true)}>
               <UsersIcon />
               Create group chat
             </DropdownMenuItem>
@@ -103,6 +119,11 @@ export function AppSidebar({ chats }: { chats: SidebarChat[] }) {
         <SearchCommand chats={chats} />
       </SidebarHeader>
       <BotDialog open={botDialogOpen} onOpenChange={setBotDialogOpen} />
+      <GroupChatDialog
+        bots={bots}
+        open={groupDialogOpen}
+        onOpenChange={setGroupDialogOpen}
+      />
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>

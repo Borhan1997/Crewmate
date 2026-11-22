@@ -1,12 +1,8 @@
 "use client";
 
+import { isToolUIPart, type InferUITools, type UIMessage } from "ai";
 import {
-  isToolUIPart,
-  type InferUITools,
-  type UIDataTypes,
-  type UIMessage,
-} from "ai";
-import {
+  ArrowRightLeftIcon,
   FileTextIcon,
   FolderOpenIcon,
   KeyboardIcon,
@@ -31,12 +27,14 @@ import {
   TraceLine,
   TraceTitle,
 } from "@/components/ui/trace";
-import type { SandboxTools } from "@/lib/sandbox-tools";
+import type { ChatTools } from "@/lib/chat-tools";
 
 export type ChatMessage = UIMessage<
-  unknown,
-  UIDataTypes,
-  InferUITools<SandboxTools>
+  // On a user message in a group chat: the bot it was addressed to.
+  { botId?: string } | undefined,
+  // `bot` stamps a reply with the bot that wrote it.
+  { bot: { botId: string } },
+  InferUITools<ChatTools>
 >;
 type Part = ChatMessage["parts"][number];
 
@@ -118,6 +116,13 @@ function summarize(part: Part): Summary | null {
           part.input &&
           [...(part.input.modifiers ?? []), part.input.key].join("+"),
       };
+    case "tool-handoff":
+      return {
+        icon: ArrowRightLeftIcon,
+        running: "Handing over",
+        done: "Handed over",
+        detail: part.input?.bot,
+      };
     case "tool-show_screen":
       return {
         icon: MonitorIcon,
@@ -137,6 +142,8 @@ function details(part: Part): string | null {
       return `$ ${part.input.command}\n${part.output.output}`.trimEnd();
     case "tool-read_file":
       return part.output.content;
+    case "tool-handoff":
+      return part.output.ok ? part.output.reason : part.output.error;
     case "tool-list_files":
       return part.output.files
         .map((f) => (f.isDir ? `${f.name}/` : f.name))

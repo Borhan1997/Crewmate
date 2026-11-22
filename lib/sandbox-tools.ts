@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
@@ -18,35 +18,54 @@ function clip(text: string) {
  * The agent's tools, all acting on the sandbox that belongs to the bot in this chat.
  * The sandbox is looked up lazily on first use and started if it is stopped.
  */
-export function createSandboxTools(chatId: string) {
-  let sandboxPromise: ReturnType<typeof getStartedSandbox> | undefined;
-  let desktopReady: Promise<void> | undefined;
+export function createSandboxTools(
+  chatId: string,
+  /** The bot acting right now; read on every call, as a handoff can change it mid-turn. */
+  currentBotId: () => string | undefined,
+) {
+  // Cached per bot, so a handoff switches to the new bot's own sandbox.
+  const sandboxes = new Map<string, ReturnType<typeof getStartedSandbox>>();
+  const desktops = new Map<string, Promise<void>>();
 
   function sandbox() {
-    sandboxPromise ??= (async () => {
+    const botId = currentBotId();
+    const key = botId ?? "";
+    let sandboxPromise = sandboxes.get(key);
+    if (sandboxPromise) return sandboxPromise;
+    sandboxPromise = (async () => {
       const [row] = await db
         .select({ sandboxId: bots.sandboxId })
         .from(chatMembers)
         .innerJoin(bots, eq(bots.id, chatMembers.botId))
-        .where(eq(chatMembers.chatId, chatId))
+        .where(
+          botId
+            ? and(eq(chatMembers.chatId, chatId), eq(chatMembers.botId, botId))
+            : eq(chatMembers.chatId, chatId),
+        )
         .limit(1);
       if (!row?.sandboxId) throw new Error("This bot has no sandbox.");
       return getStartedSandbox(row.sandboxId);
     })();
+    sandboxes.set(key, sandboxPromise);
     // Don't cache a failure: the next call retries.
-    sandboxPromise.catch(() => (sandboxPromise = undefined));
+    sandboxPromise.catch(() => sandboxes.delete(key));
     return sandboxPromise;
   }
 
   /** Starts the desktop (Xvfb, VNC, ...) once, before the first computer-use call. */
   async function desktop() {
     const box = await sandbox();
-    desktopReady ??= (async () => {
-      const status = await box.computerUse.getStatus();
-      if (status.status !== "active") await box.computerUse.start();
-    })();
-    desktopReady.catch(() => (desktopReady = undefined));
-    await desktopReady;
+    const key = currentBotId() ?? "";
+    let ready = desktops.get(key);
+    if (!ready) {
+      ready = (async () => {
+        const status = await box.computerUse.getStatus();
+        if (status.status !== "active") await box.computerUse.start();
+      })();
+      desktops.set(key, ready);
+      ready.catch(() => desktops.delete(key));
+    }
+    await ready;
     return box.computerUse;
   }
 
