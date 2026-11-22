@@ -1,3 +1,5 @@
+import { cookies } from "next/headers";
+
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { getSidebarChats } from "@/queries/bots";
@@ -7,10 +9,14 @@ export default async function DashboardLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const chats = await getSidebarChats();
+  const [chats, cookieStore] = await Promise.all([
+    getSidebarChats(),
+    cookies(),
+  ]);
+  const defaultOpen = cookieStore.get("sidebar_state")?.value !== "false";
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar chats={chats} />
       <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>

@@ -39,11 +39,14 @@ export function SearchCommand({ chats }: { chats: SidebarChat[] }) {
         type="button"
         variant="ghost"
         onClick={() => setOpen(true)}
-        className="h-8 w-full min-w-0 justify-start gap-2 rounded-lg border-input bg-transparent px-2.5 py-1 text-base font-normal text-muted-foreground md:text-sm dark:bg-input/30"
+        aria-label="Search"
+        className="h-8 w-full min-w-0 justify-start gap-2 rounded-lg border-input bg-transparent px-2.5 py-1 text-base font-normal text-muted-foreground group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-full group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:p-0 md:text-sm dark:bg-input/30 dark:group-data-[collapsible=icon]:bg-transparent dark:group-data-[collapsible=icon]:hover:bg-muted/50"
       >
         <SearchIcon />
-        Search
-        <Kbd className="ml-auto bg-transparent">⌘K</Kbd>
+        <span className="group-data-[collapsible=icon]:hidden">Search</span>
+        <Kbd className="ml-auto bg-transparent group-data-[collapsible=icon]:hidden">
+          ⌘K
+        </Kbd>
       </Button>
       <CommandDialog
         open={open}

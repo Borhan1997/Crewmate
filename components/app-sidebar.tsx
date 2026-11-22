@@ -24,15 +24,50 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
 } from "@/components/ui/sidebar";
 import { SearchCommand } from "@/components/search-command";
 import type { SidebarChat } from "@/queries/bots";
+
+function SidebarChatItem({ chat }: { chat: SidebarChat }) {
+  // The bot avatar only animates while the row is hovered or focused.
+  const [active, setActive] = useState(false);
+
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton
+        size="lg"
+        tooltip={chat.bot.name}
+        render={<a href={`/chats/${chat.id}`} />}
+        onMouseEnter={() => setActive(true)}
+        onMouseLeave={() => setActive(false)}
+        onFocus={() => setActive(true)}
+        onBlur={() => setActive(false)}
+      >
+        <ChatAvatar seed={chat.bot.avatar} animated={active} className="size-8" />
+        <div className="flex min-w-0 flex-1 flex-col group-data-[collapsible=icon]:hidden">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="truncate font-medium">{chat.bot.name}</span>
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {formatDistanceToNowStrict(chat.lastMessageAt)}
+            </span>
+          </div>
+          {chat.lastMessagePreview && (
+            <span className="truncate text-xs text-muted-foreground">
+              {chat.lastMessagePreview}
+            </span>
+          )}
+        </div>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
+  );
+}
 
 export function AppSidebar({ chats }: { chats: SidebarChat[] }) {
   const [botDialogOpen, setBotDialogOpen] = useState(false);
 
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarHeader>
         <DropdownMenu>
           <DropdownMenuTrigger
@@ -41,7 +76,7 @@ export function AppSidebar({ chats }: { chats: SidebarChat[] }) {
                 variant="ghost"
                 size="icon"
                 aria-label="Create new"
-                className="self-end"
+                className="self-end group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:self-center"
               />
             }
           >
@@ -66,24 +101,7 @@ export function AppSidebar({ chats }: { chats: SidebarChat[] }) {
           <SidebarGroupContent>
             <SidebarMenu>
               {chats.map((chat) => (
-                <SidebarMenuItem key={chat.id}>
-                  <SidebarMenuButton size="lg" render={<a href={`/chats/${chat.id}`} />}>
-                    <ChatAvatar seed={chat.bot.avatar} className="size-8" />
-                    <div className="flex min-w-0 flex-1 flex-col">
-                      <div className="flex items-baseline justify-between gap-2">
-                        <span className="truncate font-medium">{chat.bot.name}</span>
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          {formatDistanceToNowStrict(chat.lastMessageAt)}
-                        </span>
-                      </div>
-                      {chat.lastMessagePreview && (
-                        <span className="truncate text-xs text-muted-foreground">
-                          {chat.lastMessagePreview}
-                        </span>
-                      )}
-                    </div>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <SidebarChatItem key={chat.id} chat={chat} />
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
@@ -92,17 +110,17 @@ export function AppSidebar({ chats }: { chats: SidebarChat[] }) {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton render={<div />} className="p-0">
+            <SidebarMenuButton render={<div />} className="p-0 group-data-[collapsible=icon]:p-0!">
               <UserButton
                 showName
                 appearance={{
                   elements: {
                     userButtonBox:
-                      "w-full flex-row! justify-start! gap-2 p-2 text-sm",
+                      "w-full flex-row! justify-start! gap-2 p-2 text-sm group-data-[collapsible=icon]:justify-center! group-data-[collapsible=icon]:p-0!",
                     userButtonTrigger:
                       "order-first! rounded-md shadow-none focus-visible:ring-2",
                     userButtonOuterIdentifier:
-                      "order-last! truncate p-0! text-sm! font-normal! text-sidebar-foreground!",
+                      "order-last! group-data-[collapsible=icon]:hidden! truncate p-0! text-sm! font-normal! text-sidebar-foreground!",
                   },
                 }}
               />
@@ -110,6 +128,7 @@ export function AppSidebar({ chats }: { chats: SidebarChat[] }) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 }
