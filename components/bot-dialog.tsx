@@ -153,6 +153,7 @@ function DeleteBotButton({
 }
 
 function BotForm({ bot, onDone }: { bot?: EditableBot; onDone: () => void }) {
+  const router = useRouter();
   const [seed, setSeed] = useState(() => bot?.avatar ?? nanoid());
 
   const form = useForm<BotInput>({
@@ -180,6 +181,9 @@ function BotForm({ bot, onDone }: { bot?: EditableBot; onDone: () => void }) {
       } else {
         const created = await createBot(values);
         toast.add({ title: `${created.name} is ready`, type: "success" });
+        onDone();
+        router.push(`/chats/${created.chatId}`);
+        return;
       }
       onDone();
     } catch {

@@ -1,7 +1,6 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import type { UIMessage } from "ai";
 import {
   useLoadTranscript,
   useTriggerChatTransport,
@@ -12,6 +11,7 @@ import {
   mintChatAccessToken,
   startChatSession,
 } from "@/actions/chat";
+import { ToolCall, type ChatMessage } from "@/components/tool-call";
 import type { crewmateChat } from "@/trigger/chat";
 
 import {
@@ -71,7 +71,7 @@ export function Chat({ chatId }: { chatId: string }) {
   return (
     <ChatView
       chatId={chatId}
-      initialMessages={messages}
+      initialMessages={messages as ChatMessage[]}
       transport={transport}
     />
   );
@@ -83,10 +83,10 @@ function ChatView({
   transport,
 }: {
   chatId: string;
-  initialMessages: UIMessage[];
+  initialMessages: ChatMessage[];
   transport: ReturnType<typeof useTriggerChatTransport<typeof crewmateChat>>;
 }) {
-  const { messages, sendMessage, status, stop } = useChat({
+  const { messages, sendMessage, status, stop } = useChat<ChatMessage>({
     id: chatId,
     messages: initialMessages,
     transport,
@@ -110,7 +110,9 @@ function ChatView({
                     <MessageResponse key={`${message.id}-${i}`}>
                       {part.text}
                     </MessageResponse>
-                  ) : null,
+                  ) : (
+                    <ToolCall key={`${message.id}-${i}`} part={part} />
+                  ),
                 )}
               </MessageContent>
             </Message>
