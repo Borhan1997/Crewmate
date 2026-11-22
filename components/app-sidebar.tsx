@@ -3,6 +3,7 @@
 import { UserButton } from "@clerk/nextjs";
 import { formatDistanceToNowStrict } from "date-fns";
 import { PlusIcon, UsersIcon } from "lucide-react";
+import { useParams } from "next/navigation";
 import { useState } from "react";
 
 import { BotDialog } from "@/components/bot-dialog";
@@ -32,11 +33,14 @@ import type { SidebarChat } from "@/queries/bots";
 function SidebarChatItem({ chat }: { chat: SidebarChat }) {
   // The bot avatar only animates while the row is hovered or focused.
   const [active, setActive] = useState(false);
+  const { chatId } = useParams<{ chatId?: string }>();
+  const isCurrent = chatId === chat.id;
 
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
         size="lg"
+        isActive={isCurrent}
         tooltip={chat.bot.name}
         render={<a href={`/chats/${chat.id}`} />}
         onMouseEnter={() => setActive(true)}
@@ -44,7 +48,7 @@ function SidebarChatItem({ chat }: { chat: SidebarChat }) {
         onFocus={() => setActive(true)}
         onBlur={() => setActive(false)}
       >
-        <ChatAvatar seed={chat.bot.avatar} animated={active} className="size-8" />
+        <ChatAvatar seed={chat.bot.avatar} animated={active || isCurrent} className="size-8" />
         <div className="flex min-w-0 flex-1 flex-col group-data-[collapsible=icon]:hidden">
           <div className="flex items-baseline justify-between gap-2">
             <span className="truncate font-medium">{chat.bot.name}</span>
