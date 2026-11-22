@@ -117,3 +117,12 @@ Dart or C# API attributed to DiceBear is invented rather than outdated.
 
 This project has Trigger.dev agent skills installed in `.agents/skills/`. Before writing or changing Trigger.dev code (background tasks, scheduled tasks, realtime, or chat.agent AI agents), load the most relevant skill: `trigger-authoring-chat-agent`, `trigger-authoring-tasks`, `trigger-chat-agent-advanced`, `trigger-cost-savings`, `trigger-getting-started`, `trigger-realtime-and-frontend`.
 <!-- TRIGGER.DEV SKILLS END -->
+## Design
+
+Every new component and feature follows the style scraped from x.ai/bot, stored in `.firecrawl/xai-bot.json` (`branding` block).
+
+- Monochrome and low-energy: primary, text and links are `#0A0A0A` on a white background. No colourful accents, no shadows.
+- 12px radius (`--radius: 0.75rem`). Buttons are fully rounded pills (`rounded-full`).
+- Large, airy type: titles around `text-2xl` and up, body copy `text-base`. Buttons are `h-10` or taller.
+- Geist stays as the font; the scraped `xVf` face is proprietary.
+- Use semantic tokens and the shadcn variants so the theme carries the style. Change tokens in `app/globals.css` or the `cva` variants in `components/ui/`, not per-call overrides.

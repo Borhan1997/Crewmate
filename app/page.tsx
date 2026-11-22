@@ -1,32 +1,46 @@
-import { Show, SignInButton, SignOutButton, UserButton } from "@clerk/nextjs";
+import { randomUUID } from "node:crypto";
 
+import { auth } from "@clerk/nextjs/server";
+import { PlusIcon } from "lucide-react";
+
+import { BotDialog } from "@/components/bot-dialog";
+import { ChatAvatar } from "@/components/chat-avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty";
 
-export default function Page() {
+export default async function Page() {
+  const { isAuthenticated, redirectToSignIn } = await auth();
+  if (!isAuthenticated) return redirectToSignIn();
+
   return (
-    <div className="flex min-h-svh p-6">
-      <div className="flex max-w-md min-w-0 flex-col gap-4 text-sm leading-loose">
-        <div>
-          <Show when="signed-out">
-            <SignInButton>
-              <Button>Sign in</Button>
-            </SignInButton>
-          </Show>
-          <Show when="signed-in">
-            <UserButton />
-            <SignOutButton>
-              <Button variant="outline">Sign out</Button>
-            </SignOutButton>
-          </Show>
-          <h1 className="font-medium">Project ready!</h1>
-          <p>You may now add components and start building.</p>
-          <p>We&apos;ve already added the button component for you.</p>
-          <Button className="mt-2">Button</Button>
-        </div>
-        <div className="font-mono text-xs text-muted-foreground">
-          (Press <kbd>d</kbd> to toggle dark mode)
-        </div>
-      </div>
-    </div>
+    <main className="flex min-h-svh p-6">
+      <Empty>
+        <EmptyHeader>
+          <EmptyMedia>
+            <ChatAvatar animated seed={randomUUID()} className="size-20" />
+          </EmptyMedia>
+          <EmptyTitle>Meet your first bot</EmptyTitle>
+          <EmptyDescription>
+            Every bot gets its own personality, memory, and face. Spin one up
+            and start the conversation.
+          </EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <BotDialog>
+            <Button variant="secondary">
+              <PlusIcon data-icon="inline-start" />
+              Create a new bot
+            </Button>
+          </BotDialog>
+        </EmptyContent>
+      </Empty>
+    </main>
   );
 }
