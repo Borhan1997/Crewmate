@@ -1,11 +1,16 @@
+"use client";
+
 import { BuildingIcon, MonitorIcon } from "lucide-react";
 
 import { BotDialog } from "@/components/bot-dialog";
 import { ChatAvatar } from "@/components/chat-avatar";
+import { useSidePanel } from "@/components/side-panel";
 import { Button } from "@/components/ui/button";
 import type { Chat } from "@/queries/chats";
 
 export function ChatHeader({ chat }: { chat: Chat }) {
+  const { toggle } = useSidePanel();
+
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
       <h1 className="min-w-0 flex-1">
@@ -26,7 +31,13 @@ export function ChatHeader({ chat }: { chat: Chat }) {
       <Button variant="ghost" size="icon" aria-label="Office" type="button">
         <BuildingIcon />
       </Button>
-      <Button variant="ghost" size="icon" aria-label="Desktop" type="button">
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label="Desktop"
+        type="button"
+        onClick={() => toggle("desktop")}
+      >
         <MonitorIcon />
       </Button>
     </header>
