@@ -1,7 +1,8 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { chat } from "@trigger.dev/sdk/ai";
 import { stepCountIs } from "ai";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
+import { z } from "zod";
 
 import { db } from "@/db";
 import { bots, chatMembers } from "@/db/schema";
@@ -9,21 +10,39 @@ import { createSandboxTools } from "@/lib/sandbox-tools";
 
 // No `storage` set: the default transcript storage keeps the conversation
 // per chat id (the Session's chatId) in platform object storage.
+//
+// `botId` arrives through the transport's client data: in a group chat it is
+// the bot the user picked for this turn. It is only a request: the bot must
+// be a member of the chat.
 export const crewmateChat = chat.agent({
   id: "crewmate-chat",
-  tools: ({ chatId }) => createSandboxTools(chatId),
-  run: async ({ chatId, messages, tools, signal, streamText }) => {
+  clientDataSchema: z.object({ botId: z.string().optional() }),
+  tools: ({ chatId, clientData }) =>
+    createSandboxTools(chatId, clientData?.botId),
+  run: async ({ chatId, clientData, messages, tools, signal, streamText }) => {
+    const botId = clientData?.botId;
     const [bot] = await db
       .select({
+        id: bots.id,
         name: bots.name,
         job: bots.job,
         instructions: bots.instructions,
       })
       .from(chatMembers)
       .innerJoin(bots, eq(bots.id, chatMembers.botId))
-      .where(eq(chatMembers.chatId, chatId))
+      .where(
+        and(
+          eq(chatMembers.chatId, chatId),
+          botId ? eq(chatMembers.botId, botId) : undefined,
+        ),
+      )
       .orderBy(asc(chatMembers.joinedAt))
       .limit(1);
+
+    if (botId && !bot) throw new Error("That bot is not in this chat.");
+
+    // Stamp the reply with its author so the UI can show who answered.
+    if (bot) chat.response.write({ type: "data-bot", data: { botId: bot.id } });
 
     const system = bot
       ? [

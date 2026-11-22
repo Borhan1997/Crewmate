@@ -3,7 +3,6 @@
 import {
   isToolUIPart,
   type InferUITools,
-  type UIDataTypes,
   type UIMessage,
 } from "ai";
 import {
@@ -35,7 +34,8 @@ import type { SandboxTools } from "@/lib/sandbox-tools";
 
 export type ChatMessage = UIMessage<
   unknown,
-  UIDataTypes,
+  // `bot` stamps a reply with the bot that wrote it.
+  { bot: { botId: string } },
   InferUITools<SandboxTools>
 >;
 type Part = ChatMessage["parts"][number];

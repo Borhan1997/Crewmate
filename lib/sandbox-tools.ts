@@ -1,5 +1,5 @@
 import { tool } from "ai";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 
 import { db } from "@/db";
@@ -18,7 +18,7 @@ function clip(text: string) {
  * The agent's tools, all acting on the sandbox that belongs to the bot in this chat.
  * The sandbox is looked up lazily on first use and started if it is stopped.
  */
-export function createSandboxTools(chatId: string) {
+export function createSandboxTools(chatId: string, botId?: string) {
   let sandboxPromise: ReturnType<typeof getStartedSandbox> | undefined;
   let desktopReady: Promise<void> | undefined;
 
@@ -28,7 +28,11 @@ export function createSandboxTools(chatId: string) {
         .select({ sandboxId: bots.sandboxId })
         .from(chatMembers)
         .innerJoin(bots, eq(bots.id, chatMembers.botId))
-        .where(eq(chatMembers.chatId, chatId))
+        .where(
+          botId
+            ? and(eq(chatMembers.chatId, chatId), eq(chatMembers.botId, botId))
+            : eq(chatMembers.chatId, chatId),
+        )
         .limit(1);
       if (!row?.sandboxId) throw new Error("This bot has no sandbox.");
       return getStartedSandbox(row.sandboxId);

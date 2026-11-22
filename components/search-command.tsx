@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { ChatAvatar } from "@/components/chat-avatar";
+import { GroupChatAvatar } from "@/components/group-chat-avatar";
 import { Button } from "@/components/ui/button";
 import {
   Command,
@@ -59,25 +60,33 @@ export function SearchCommand({ chats }: { chats: SidebarChat[] }) {
           <CommandList>
             <CommandEmpty>No chats found.</CommandEmpty>
             <CommandGroup heading="Chats">
-              {chats.map((chat) => (
+              {chats.map((chat) => {
+                const isGroup = chat.kind === "group";
+                const title = (isGroup ? chat.name : null) ?? chat.bots[0].name;
+                return (
                 <CommandItem
                   key={chat.id}
                   value={chat.id}
-                  keywords={[chat.bot.name, chat.lastMessagePreview ?? ""]}
+                  keywords={[title, chat.lastMessagePreview ?? ""]}
                   onSelect={() => {
                     setOpen(false);
                     router.push(`/chats/${chat.id}`);
                   }}
                 >
-                  <ChatAvatar seed={chat.bot.avatar} className="size-6" />
-                  <span className="shrink-0 font-medium">{chat.bot.name}</span>
+                  {isGroup ? (
+                    <GroupChatAvatar bots={chat.bots} className="size-6" />
+                  ) : (
+                    <ChatAvatar seed={chat.bots[0].avatar} className="size-6" />
+                  )}
+                  <span className="shrink-0 font-medium">{title}</span>
                   {chat.lastMessagePreview && (
                     <span className="truncate text-muted-foreground">
                       {chat.lastMessagePreview}
                     </span>
                   )}
                 </CommandItem>
-              ))}
+                );
+              })}
             </CommandGroup>
           </CommandList>
         </Command>
