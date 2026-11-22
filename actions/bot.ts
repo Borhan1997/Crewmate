@@ -3,8 +3,10 @@
 import { auth } from "@clerk/nextjs/server";
 import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { nanoid } from "nanoid";
 
 import { db } from "@/db";
+import { createSandbox, deleteSandbox } from "@/lib/daytona";
 import {
   type BotInput,
   botInsertSchema,
@@ -20,25 +22,41 @@ export async function createBot(input: BotInput) {
   const data = botInsertSchema.parse(input);
 
   // One transaction: the bot, its direct chat and the membership are created together or not at all.
-  const bot = await db.transaction(async (tx) => {
-    const [bot] = await tx
-      .insert(bots)
-      .values({ ...data, instructions: data.instructions || null, userId })
-      .returning();
+  const botId = nanoid();
+  const sandboxId = await createSandbox(botId);
 
-    const [chat] = await tx
-      .insert(chats)
-      .values({ userId, kind: "direct" })
-      .returning({ id: chats.id });
+  let created;
+  try {
+    created = await db.transaction(async (tx) => {
+      const [bot] = await tx
+        .insert(bots)
+        .values({
+          ...data,
+          id: botId,
+          instructions: data.instructions || null,
+          sandboxId,
+          userId,
+        })
+        .returning();
 
-    await tx.insert(chatMembers).values({ chatId: chat.id, botId: bot.id });
+      const [chat] = await tx
+        .insert(chats)
+        .values({ userId, kind: "direct" })
+        .returning({ id: chats.id });
 
-    return bot;
-  });
+      await tx.insert(chatMembers).values({ chatId: chat.id, botId: bot.id });
+
+      return { bot, chatId: chat.id };
+    });
+  } catch (error) {
+    // Don't leak the sandbox if the bot could not be saved.
+    await deleteSandbox(sandboxId).catch(() => {});
+    throw error;
+  }
 
   // The chat list lives in the dashboard layout, so revalidate the layout, not just the page.
   revalidatePath("/", "layout");
-  return bot;
+  return { ...created.bot, chatId: created.chatId };
 }
 
 export async function updateBot(botId: string, input: BotInput) {
@@ -64,7 +82,7 @@ export async function deleteBot(botId: string) {
 
   await db.transaction(async (tx) => {
     const [bot] = await tx
-      .select({ id: bots.id })
+      .select({ id: bots.id, sandboxId: bots.sandboxId })
       .from(bots)
       .where(and(eq(bots.id, botId), eq(bots.userId, userId)));
     if (!bot) throw new Error("Bot not found");
@@ -91,6 +109,9 @@ export async function deleteBot(botId: string) {
     }
 
     await tx.delete(bots).where(eq(bots.id, botId));
+
+    // Last step, so a failure here rolls the whole deletion back.
+    if (bot.sandboxId) await deleteSandbox(bot.sandboxId);
   });
 
   revalidatePath("/", "layout");
