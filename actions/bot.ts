@@ -35,6 +35,7 @@ export async function createBot(input: BotInput) {
     return bot;
   });
 
-  revalidatePath("/");
+  // The chat list lives in the dashboard layout, so revalidate the layout, not just the page.
+  revalidatePath("/", "layout");
   return bot;
 }
