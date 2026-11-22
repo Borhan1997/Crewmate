@@ -1,14 +1,17 @@
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { getSidebarChats } from "@/queries/bots";
 
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const chats = await getSidebarChats();
+
   return (
     <SidebarProvider>
-      <AppSidebar />
+      <AppSidebar chats={chats} />
       <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
   );

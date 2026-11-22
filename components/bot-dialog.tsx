@@ -39,12 +39,22 @@ const JOB_SUGGESTIONS = [
   "Tutor",
 ];
 
-export function BotDialog({ children }: { children: React.ReactElement }) {
-  const [open, setOpen] = useState(false);
+export function BotDialog({
+  children,
+  open: controlledOpen,
+  onOpenChange,
+}: {
+  children?: React.ReactElement;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={children} />
+      {children && <DialogTrigger render={children} />}
       <DialogContent className="sm:max-w-lg">
         <BotForm onCreated={() => setOpen(false)} />
       </DialogContent>
