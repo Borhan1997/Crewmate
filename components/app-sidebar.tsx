@@ -52,7 +52,10 @@ function SidebarChatItem({ chat }: { chat: SidebarChat }) {
         <div className="flex min-w-0 flex-1 flex-col group-data-[collapsible=icon]:hidden">
           <div className="flex items-baseline justify-between gap-2">
             <span className="truncate font-medium">{chat.bot.name}</span>
-            <span className="shrink-0 text-xs text-muted-foreground">
+            <span
+              suppressHydrationWarning
+              className="shrink-0 text-xs text-muted-foreground"
+            >
               {formatDistanceToNowStrict(chat.lastMessageAt)}
             </span>
           </div>

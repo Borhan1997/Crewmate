@@ -9,3 +9,5 @@ build/
 npm-debug.log*
 .vercel
 .neon
+
+.trigger
