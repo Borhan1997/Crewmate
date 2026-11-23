@@ -4,8 +4,26 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 
-import { createGroupChat } from "@/actions/chat";
+import { Trash2Icon } from "lucide-react";
+import { useState } from "react";
+
+import {
+  createGroupChat,
+  deleteGroupChat,
+  updateGroupChat,
+} from "@/actions/chat";
 import { ChatAvatar } from "@/components/chat-avatar";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -16,6 +34,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Field,
@@ -29,56 +48,154 @@ import { toast } from "@/components/ui/toast";
 import { type GroupChatInput, groupChatInsertSchema } from "@/db/schema";
 
 type PickableBot = { id: string; name: string; avatar: string };
+type EditableGroup = { id: string; name: string | null; botIds: string[] };
 
 export function GroupChatDialog({
   bots,
-  open,
+  group,
+  children,
+  open: controlledOpen,
   onOpenChange,
 }: {
   bots: PickableBot[];
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  /** When set, the dialog edits this group instead of creating a new one. */
+  group?: EditableGroup;
+  children?: React.ReactElement;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={setOpen}>
+      {children && <DialogTrigger render={children} />}
       <DialogContent className="sm:max-w-lg">
-        <GroupChatForm bots={bots} onDone={() => onOpenChange(false)} />
+        <GroupChatForm
+          bots={bots}
+          group={group}
+          onDone={() => setOpen(false)}
+        />
       </DialogContent>
     </Dialog>
   );
 }
 
+function DeleteGroupButton({
+  group,
+  onDeleted,
+  disabled,
+}: {
+  group: EditableGroup;
+  onDeleted: () => void;
+  disabled?: boolean;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function confirm() {
+    setIsDeleting(true);
+    try {
+      await deleteGroupChat(group.id);
+      toast.add({ title: `${group.name} deleted`, type: "success" });
+      setOpen(false);
+      onDeleted();
+      router.push("/");
+    } catch {
+      toast.add({ title: "Could not delete group", type: "error" });
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  return (
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger
+        render={
+          <Button
+            type="button"
+            variant="destructive"
+            disabled={disabled}
+            className="sm:mr-auto"
+          />
+        }
+      >
+        <Trash2Icon data-icon="inline-start" />
+        Delete
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete {group.name}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This removes the group chat for good. Its bots are kept. It
+            can&apos;t be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            type="button"
+            variant="destructive"
+            disabled={isDeleting}
+            onClick={confirm}
+          >
+            {isDeleting && <Spinner data-icon="inline-start" />}
+            Delete group
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 function GroupChatForm({
   bots,
+  group,
   onDone,
 }: {
   bots: PickableBot[];
+  group?: EditableGroup;
   onDone: () => void;
 }) {
   const router = useRouter();
   const form = useForm<GroupChatInput>({
     resolver: zodResolver(groupChatInsertSchema),
-    defaultValues: { name: "", botIds: [] },
+    defaultValues: { name: group?.name ?? "", botIds: group?.botIds ?? [] },
   });
   const { isSubmitting } = form.formState;
 
   const onSubmit = form.handleSubmit(async (values) => {
     try {
+      if (group) {
+        await updateGroupChat(group.id, values);
+        toast.add({ title: `${values.name} updated`, type: "success" });
+        onDone();
+        return;
+      }
       const created = await createGroupChat(values);
       toast.add({ title: `${values.name} is ready`, type: "success" });
       onDone();
       router.push(`/chats/${created.id}`);
     } catch {
-      toast.add({ title: "Could not create group", type: "error" });
+      toast.add({
+        title: group ? "Could not update group" : "Could not create group",
+        type: "error",
+      });
     }
   });
 
   return (
     <form onSubmit={onSubmit} className="contents">
       <DialogHeader>
-        <DialogTitle>New group chat</DialogTitle>
+        <DialogTitle>
+          {group ? "Edit group chat" : "New group chat"}
+        </DialogTitle>
         <DialogDescription>
-          Name the group and pick which bots are in it.
+          {group
+            ? "Rename the group or change which bots are in it."
+            : "Name the group and pick which bots are in it."}
         </DialogDescription>
       </DialogHeader>
 
@@ -136,12 +253,19 @@ function GroupChatForm({
       </FieldGroup>
 
       <DialogFooter>
+        {group && (
+          <DeleteGroupButton
+            group={group}
+            onDeleted={onDone}
+            disabled={isSubmitting}
+          />
+        )}
         <DialogClose render={<Button type="button" variant="outline" />}>
           Cancel
         </DialogClose>
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting && <Spinner data-icon="inline-start" />}
-          Create group
+          {group ? "Save changes" : "Create group"}
         </Button>
       </DialogFooter>
     </form>
