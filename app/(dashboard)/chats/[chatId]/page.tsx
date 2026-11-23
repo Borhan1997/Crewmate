@@ -10,6 +10,7 @@ import {
   SidePanelProvider,
 } from "@/components/side-panel";
 import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
+import { getBots } from "@/queries/bots";
 import { getChat } from "@/queries/chats";
 
 export default async function Page(props: PageProps<"/chats/[chatId]">) {
@@ -17,12 +18,12 @@ export default async function Page(props: PageProps<"/chats/[chatId]">) {
   if (!isAuthenticated) return redirectToSignIn();
 
   const { chatId } = await props.params;
-  const chat = await getChat(chatId);
+  const [chat, bots] = await Promise.all([getChat(chatId), getBots()]);
   if (!chat) notFound();
 
   const chatView = (
     <main className="flex h-full min-h-0 flex-col">
-      <ChatHeader chat={chat} />
+      <ChatHeader chat={chat} bots={bots} />
       <Chat chatId={chatId} bots={chat.bots} isGroup={chat.kind === "group"} />
     </main>
   );
