@@ -105,7 +105,7 @@ function DeleteBotButton({
       toast.add({ title: `${bot.name} deleted`, type: "success" });
       setOpen(false);
       onDeleted();
-      router.push("/");
+      router.push("/home");
     } catch {
       toast.add({ title: "Could not delete bot", type: "error" });
     } finally {
