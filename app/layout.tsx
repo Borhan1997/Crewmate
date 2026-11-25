@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/ui/themes";
 import { Geist, Geist_Mono } from "next/font/google";
@@ -8,6 +9,11 @@ import { DirectionProvider } from "@/components/ui/direction";
 import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+
+export const metadata: Metadata = {
+  title: "Crewmate",
+  description: "Open-source AI teammates with a job, a memory and a cloud computer of their own.",
+};
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 

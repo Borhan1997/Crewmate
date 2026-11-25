@@ -1,6 +1,5 @@
 "use client";
 
-import { UserButton } from "@clerk/nextjs";
 import { formatDistanceToNowStrict } from "date-fns";
 import { PlusIcon, UsersIcon } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -10,6 +9,7 @@ import { BotDialog } from "@/components/bot-dialog";
 import { ChatAvatar } from "@/components/chat-avatar";
 import { GroupChatAvatar } from "@/components/group-chat-avatar";
 import { GroupChatDialog } from "@/components/group-chat-dialog";
+import { UserMenu } from "@/components/user-menu";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -54,22 +54,30 @@ function SidebarChatItem({ chat }: { chat: SidebarChat }) {
         onBlur={() => setActive(false)}
       >
         {isGroup ? (
-          <GroupChatAvatar bots={chat.bots} animated={animated} className="size-8" />
+          <GroupChatAvatar
+            bots={chat.bots}
+            animated={animated}
+            className="size-8"
+          />
         ) : (
-          <ChatAvatar seed={chat.bots[0].avatar} animated={animated} className="size-8" />
+          <ChatAvatar
+            seed={chat.bots[0].avatar}
+            animated={animated}
+            className="size-8"
+          />
         )}
         <div className="flex min-w-0 flex-1 flex-col group-data-[collapsible=icon]:hidden">
           <div className="flex items-baseline justify-between gap-2">
             <span className="truncate font-medium">{title}</span>
             <span
               suppressHydrationWarning
-              className="shrink-0 text-xs text-muted-foreground"
+              className="shrink-0 text-sm text-muted-foreground"
             >
               {formatDistanceToNowStrict(chat.lastMessageAt)}
             </span>
           </div>
           {chat.lastMessagePreview && (
-            <span className="truncate text-xs text-muted-foreground">
+            <span className="truncate text-sm text-muted-foreground">
               {chat.lastMessagePreview}
             </span>
           )}
@@ -92,30 +100,38 @@ export function AppSidebar({
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
-        <DropdownMenu>
-          <DropdownMenuTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Create new"
-                className="self-end group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:self-center"
-              />
-            }
+        <div className="relative mb-4 flex items-center justify-center">
+          <a
+            href="/home"
+            className="text-2xl font-medium tracking-tight italic group-data-[collapsible=icon]:hidden"
           >
-            <PlusIcon />
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem onClick={() => setBotDialogOpen(true)}>
+            Crewmate
+          </a>
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Create new"
+                  className="absolute right-0 group-data-[collapsible=icon]:static group-data-[collapsible=icon]:size-8"
+                />
+              }
+            >
               <PlusIcon />
-              Create new bot
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => setGroupDialogOpen(true)}>
-              <UsersIcon />
-              Create group chat
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => setBotDialogOpen(true)}>
+                <PlusIcon />
+                Create new bot
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setGroupDialogOpen(true)}>
+                <UsersIcon />
+                Create group chat
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         <SearchCommand chats={chats} />
       </SidebarHeader>
       <BotDialog open={botDialogOpen} onOpenChange={setBotDialogOpen} />
@@ -138,21 +154,7 @@ export function AppSidebar({
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton render={<div />} className="p-0 group-data-[collapsible=icon]:p-0!">
-              <UserButton
-                showName
-                appearance={{
-                  elements: {
-                    userButtonBox:
-                      "w-full flex-row! justify-start! gap-2 p-2 text-sm group-data-[collapsible=icon]:justify-center! group-data-[collapsible=icon]:p-0!",
-                    userButtonTrigger:
-                      "order-first! rounded-md shadow-none focus-visible:ring-2",
-                    userButtonOuterIdentifier:
-                      "order-last! group-data-[collapsible=icon]:hidden! truncate p-0! text-sm! font-normal! text-sidebar-foreground!",
-                  },
-                }}
-              />
-            </SidebarMenuButton>
+            <UserMenu />
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>

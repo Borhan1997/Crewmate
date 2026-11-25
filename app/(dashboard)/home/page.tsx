@@ -22,19 +22,19 @@ export default async function Page() {
   return (
     <main className="flex min-h-svh p-6">
       <Empty>
-        <EmptyHeader>
+        <EmptyHeader className="max-w-xl gap-3">
           <EmptyMedia>
-            <ChatAvatar animated seed={randomUUID()} className="size-20" />
+            <ChatAvatar animated seed={randomUUID()} className="size-28" />
           </EmptyMedia>
-          <EmptyTitle>Meet your first bot</EmptyTitle>
-          <EmptyDescription>
+          <EmptyTitle className="text-4xl sm:text-5xl">Meet your first bot</EmptyTitle>
+          <EmptyDescription className="text-lg sm:text-xl">
             Every bot gets its own personality, memory, and face. Spin one up
             and start the conversation.
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
           <BotDialog>
-            <Button variant="secondary">
+            <Button variant="secondary" size="lg">
               <PlusIcon data-icon="inline-start" />
               Create a new bot
             </Button>

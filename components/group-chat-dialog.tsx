@@ -102,7 +102,7 @@ function DeleteGroupButton({
       toast.add({ title: `${group.name} deleted`, type: "success" });
       setOpen(false);
       onDeleted();
-      router.push("/");
+      router.push("/home");
     } catch {
       toast.add({ title: "Could not delete group", type: "error" });
     } finally {

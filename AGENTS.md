@@ -119,7 +119,7 @@ This project has Trigger.dev agent skills installed in `.agents/skills/`. Before
 <!-- TRIGGER.DEV SKILLS END -->
 ## Design
 
-Every new component and feature follows the style scraped from x.ai/bot, stored in `.firecrawl/xai-bot.json` (`branding` block).
+Every new component and feature follows the style scraped from x.ai/bot, stored in `docs/design-reference.json` (`branding` block).
 
 - Monochrome and low-energy: primary, text and links are `#0A0A0A` on a white background. No colourful accents, no shadows.
 - 12px radius (`--radius: 0.75rem`). Buttons are fully rounded pills (`rounded-full`).
