@@ -3,10 +3,12 @@ import { chat } from "@trigger.dev/sdk/ai";
 import { stepCountIs } from "ai";
 import { asc, eq } from "drizzle-orm";
 import { z } from "zod";
+import type { UIMessage } from "ai";
 
 import { db } from "@/db";
-import { bots, chatMembers } from "@/db/schema";
+import { bots, chatMembers, chats } from "@/db/schema";
 import { botSystemPrompt } from "@/lib/bot-prompt";
+import { lastMessagePreview } from "@/lib/chat-preview";
 import { activeBotId, createChatTools, startTurn } from "@/lib/chat-tools";
 
 function loadMembers(chatId: string) {
@@ -23,6 +25,17 @@ function loadMembers(chatId: string) {
     .orderBy(asc(chatMembers.joinedAt));
 }
 
+// The transcript lives in Trigger.dev storage, so the sidebar's preview of the
+// latest message is mirrored into the chat row at the start and end of a turn.
+async function saveLastMessage(chatId: string, messages: UIMessage[]) {
+  const preview = lastMessagePreview(messages);
+  if (!preview) return;
+  await db
+    .update(chats)
+    .set({ lastMessagePreview: preview, lastMessageAt: new Date() })
+    .where(eq(chats.id, chatId));
+}
+
 // No `storage` set: the default transcript storage keeps the conversation
 // per chat id (the Session's chatId) in platform object storage.
 //
@@ -35,6 +48,8 @@ export const crewmateChat = chat.agent({
   clientDataSchema: z.object({ botId: z.string().optional() }),
   tools: ({ chatId, clientData }) =>
     createChatTools(chatId, clientData?.botId, () => loadMembers(chatId)),
+  onTurnStart: ({ chatId, uiMessages }) => saveLastMessage(chatId, uiMessages),
+  onTurnComplete: ({ chatId, uiMessages }) => saveLastMessage(chatId, uiMessages),
   run: async ({ chatId, clientData, messages, tools, signal, streamText }) => {
     const botId = clientData?.botId;
     const members = await loadMembers(chatId);

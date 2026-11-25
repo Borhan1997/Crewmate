@@ -1,6 +1,7 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import {
   useLoadTranscript,
@@ -117,6 +118,7 @@ function ChatView({
   initialMessages: ChatMessage[];
   transport: ReturnType<typeof useTriggerChatTransport<typeof crewmateChat>>;
 }) {
+  const router = useRouter();
   const { messages, sendMessage, status, stop } = useChat<ChatMessage>({
     id: chatId,
     messages: initialMessages,
@@ -124,6 +126,8 @@ function ChatView({
     resume: initialMessages.length > 0,
     // After a handoff the teammate is the one the user is now talking to.
     onFinish: ({ message }) => {
+      // The agent saves the sidebar preview just after the stream closes.
+      setTimeout(() => router.refresh(), 1500);
       const handoff = message.parts.findLast(
         (part) =>
           part.type === "tool-handoff" && part.state === "output-available",
@@ -179,7 +183,7 @@ function ChatView({
                 {sections.map(({ author, parts }, section) => (
                   <div key={section} className="flex flex-col gap-2">
                     {author && (
-                      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <div className="flex items-center gap-2 text-base font-medium text-muted-foreground">
                         <ChatAvatar seed={author.avatar} className="size-6" />
                         {author.name}
                       </div>
